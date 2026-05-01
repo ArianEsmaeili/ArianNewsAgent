@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arian's News Agent</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+  header { background: #1a1d2e; border-bottom: 1px solid #2d2f45; padding: 18px 30px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.3rem; font-weight: 700; color: #fff; }
+  header span { font-size: 0.8rem; color: #888; margin-left: auto; }
+  .config { background: #1a1d2e; border: 1px solid #2d2f45; border-radius: 10px; padding: 20px; margin: 24px 30px 0; }
+  .config h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 14px; }
+  .config-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .config-row label { font-size: 0.8rem; color: #aaa; display: block; margin-bottom: 5px; }
+  .config-row input { background: #0f1117; border: 1px solid #3a3d55; border-radius: 6px; padding: 9px 13px; color: #e0e0e0; font-size: 0.9rem; width: 320px; }
+  .config-row input:focus { outline: none; border-color: #6c7bff; }
+  .topics-check { display: flex; gap: 10px; flex-wrap: wrap; }
+  .topics-check label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.88rem; background: #0f1117; border: 1px solid #3a3d55; border-radius: 6px; padding: 7px 13px; transition: border-color 0.2s; }
+  .topics-check input[type=checkbox]:checked + span { color: #6c7bff; }
+  .topics-check label:has(input:checked) { border-color: #6c7bff; }
+  .topics-check input[type=checkbox] { accent-color: #6c7bff; }
+  .run-btn { background: #6c7bff; color: #fff; border: none; border-radius: 8px; padding: 10px 26px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+  .run-btn:hover { background: #8491ff; }
+  .run-btn:disabled { background: #3a3d55; color: #666; cursor: not-allowed; }
+  .status { margin: 16px 30px 0; font-size: 0.85rem; color: #888; min-height: 20px; }
+  .status.error { color: #ff6b6b; }
+  .status.ok { color: #6bffb8; }
+  #report { margin: 20px 30px 30px; }
+  .source-badges { display: flex; gap: 8px; margin-bottom: 20px; }
+  .badge { font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge.cnn { background: #cc0000; color: #fff; }
+  .badge.fox { background: #003366; color: #fff; }
+  .badge.guardian { background: #005689; color: #fff; }
+  .section-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: #6c7bff; margin: 28px 0 12px; border-bottom: 1px solid #2d2f45; padding-bottom: 6px; }
+  .cluster { background: #1a1d2e; border: 1px solid #2d2f45; border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+  .cluster-topic { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 10px; }
+  .cluster-sources { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .article { border-left: 2px solid #3a3d55; padding: 8px 12px; margin-bottom: 8px; }
+  .article:last-child { margin-bottom: 0; }
+  .article-source { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .article-source.CNN { color: #ff6b6b; }
+  .article-source.Fox { color: #6b9fff; }
+  .article-source.Guardian { color: #6bffb8; }
+  .article-title { font-size: 0.88rem; color: #ddd; line-height: 1.4; }
+  .article-title a { color: inherit; text-decoration: none; }
+  .article-title a:hover { text-decoration: underline; color: #6c7bff; }
+  .article-desc { font-size: 0.8rem; color: #888; margin-top: 4px; line-height: 1.4; }
+  .unique-list .article { border-left-color: #2d2f45; }
+  .dl-row { display: flex; gap: 10px; margin-top: 24px; }
+  .dl-btn { background: #1a1d2e; border: 1px solid #3a3d55; color: #e0e0e0; border-radius: 8px; padding: 9px 20px; font-size: 0.88rem; cursor: pointer; transition: border-color 0.2s; }
+  .dl-btn:hover { border-color: #6c7bff; color: #6c7bff; }
+  .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid #3a3d55; border-top-color: #6c7bff; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty { color: #555; font-size: 0.88rem; text-align: center; padding: 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span>🗞️</span>
+  <h1>Arian's News Agent</h1>
+  <span>CNN · Fox News · The Guardian</span>
+</header>
+
+<div class="config">
+  <h2>Configuration</h2>
+  <div class="config-row">
+    <div>
+      <label>NewsAPI Key <a href="https://newsapi.org/register" target="_blank" style="color:#6c7bff;font-size:0.75rem;">(get free key)</a></label>
+      <input type="password" id="apiKey" placeholder="Paste your NewsAPI key here" />
+    </div>
+    <div>
+      <label>Date Range</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="dateFrom" style="width:150px" />
+        <span style="color:#888;font-size:0.85rem">to</span>
+        <input type="date" id="dateTo" style="width:150px" />
+      </div>
+    </div>
+    <div>
+      <label>Topics</label>
+      <div class="topics-check">
+        <label><input type="checkbox" id="topicBusiness" checked><span>Business</span></label>
+        <label><input type="checkbox" id="topicSports" checked><span>Sports</span></label>
+        <label><input type="checkbox" id="topicTech"><span>Technology</span></label>
+        <label><input type="checkbox" id="topicPolitics"><span>Politics</span></label>
+      </div>
+    </div>
+    <button class="run-btn" id="runBtn" onclick="runAgent()">▶ Run Agent</button>
+  </div>
+</div>
+
+<div class="status" id="status">Enter your NewsAPI key and click Run Agent.</div>
+<div id="report"></div>
+
+<script>
+const SOURCES = {
+  CNN: 'cnn',
+  Fox: 'fox-news',
+  Guardian: 'the-guardian-uk'
+};
+
+const TOPIC_QUERIES = {
+  Business: 'business economy market finance',
+  Sports: 'sports football basketball soccer',
+  Technology: 'technology AI software startup',
+  Politics: 'politics government election policy'
+};
+
+let lastReportData = null;
+
+function setStatus(msg, type='') {
+  const el = document.getElementById('status');
+  el.className = 'status ' + type;
+  el.innerHTML = msg;
+}
+
+function getSelectedTopics() {
+  return Object.keys(TOPIC_QUERIES).filter(t => document.getElementById('topic'+t)?.checked);
+}
+
+async function fetchHeadlines(apiKey, sourceId, query) {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
+  const dateParams = (from ? `&from=${from}` : '') + (to ? `&to=${to}T23:59:59` : '');
+  const url = `https://news-agent-liard.vercel.app/api/news?sources=${sourceId}&q=${encodeURIComponent(query)}${dateParams}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`NewsAPI error: ${res.status}`);
+  const data = await res.json();
+  if (data.status !== 'ok') throw new Error(data.message || 'NewsAPI error');
+  return data.articles || [];
+}
+
+function extractKeywords(title) {
+  const stop = new Set(['the','a','an','in','on','at','to','for','of','and','or','but','is','are','was','were','with','from','by','as','this','that','has','have','its','it','be','been','will','he','she','they','we','his','her','their','our','says','said','new','after','over','up','out','about','how','what','who','when','why','more','also','not','no','can','could','would','should','may','might','vs','than','us','amid','into','just','than']);
+  return title.toLowerCase().replace(/[^a-z0-9 ]/g,'').split(/\s+/).filter(w => w.length > 3 && !stop.has(w));
+}
+
+function clusterArticles(allArticles) {
+  // allArticles: [{source, title, description, url, publishedAt}]
+  const clusters = {};
+  const assigned = new Set();
+
+  allArticles.forEach((a, i) => {
+    if (assigned.has(i)) return;
+    const kw = extractKeywords(a.title);
+    if (!kw.length) return;
+
+    const matches = [i];
+    allArticles.forEach((b, j) => {
+      if (i === j || assigned.has(j)) return;
+      const bkw = extractKeywords(b.title);
+      const shared = kw.filter(k => bkw.includes(k));
+      if (shared.length >= 2) matches.push(j);
+    });
+
+    if (matches.length > 1) {
+      // multi-source cluster
+      const key = kw.slice(0,3).join(' ');
+      if (!clusters[key]) clusters[key] = [];
+      matches.forEach(idx => { clusters[key].push(allArticles[idx]); assigned.add(idx); });
+    }
+  });
+
+  // Remaining as unique
+  const unique = allArticles.filter((_, i) => !assigned.has(i));
+  return { clusters, unique };
+}
+
+async function runAgent() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { setStatus('⚠️ Please enter your NewsAPI key.', 'error'); return; }
+  const topics = getSelectedTopics();
+  if (!topics.length) { setStatus('⚠️ Select at least one topic.', 'error'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  document.getElementById('report').innerHTML = '';
+  lastReportData = null;
+
+  const allArticles = [];
+  const sourceNames = Object.keys(SOURCES);
+  const query = topics.map(t => TOPIC_QUERIES[t]).join(' OR ');
+
+  for (const [name, id] of Object.entries(SOURCES)) {
+    setStatus(`<span class="loader"></span>Fetching from <b>${name}</b>...`);
+    try {
+      const articles = await fetchHeadlines(apiKey, id, query);
+      articles.forEach(a => allArticles.push({ source: name, title: a.title, description: a.description, url: a.url, publishedAt: a.publishedAt }));
+    } catch(e) {
+      setStatus(`Error fetching ${name}: ${e.message}`, 'error');
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  setStatus(`<span class="loader"></span>Clustering ${allArticles.length} articles...`);
+  await new Promise(r => setTimeout(r, 400));
+
+  const { clusters, unique } = clusterArticles(allArticles);
+  lastReportData = { clusters, unique, allArticles, topics, generated: new Date().toLocaleString() };
+
+  renderReport(lastReportData);
+  setStatus(`✓ Done — ${Object.keys(clusters).length} shared topic clusters found across ${allArticles.length} articles.`, 'ok');
+  btn.disabled = false;
+}
+
+function sourceBadge(name) {
+  return `<span class="badge ${name.replace(' ','')}">${name}</span>`;
+}
+
+function renderReport({ clusters, unique, topics, generated }) {
+  const el = document.getElementById('report');
+  const clusterKeys = Object.keys(clusters);
+
+  const sourcesPresent = [...new Set(Object.values(clusters).flat().concat(unique).map(a => a.source))];
+
+  let html = `
+    <div class="source-badges">
+      ${sourcesPresent.map(s => sourceBadge(s)).join('')}
+      <span style="margin-left:auto;font-size:0.78rem;color:#555">Generated: ${generated}</span>
+    </div>
+  `;
+
+  if (clusterKeys.length) {
+    html += `<div class="section-title">🔗 Shared Topics (${clusterKeys.length})</div>`;
+    clusterKeys.forEach(key => {
+      const arts = clusters[key];
+      const srcs = [...new Set(arts.map(a => a.source))];
+      html += `
+        <div class="cluster">
+          <div class="cluster-topic">${capitalize(key)}</div>
+          <div class="cluster-sources">${srcs.map(s => sourceBadge(s)).join('')}</div>
+          ${arts.map(a => articleHTML(a)).join('')}
+        </div>
+      `;
+    });
+  } else {
+    html += `<div class="section-title">🔗 Shared Topics</div><div class="empty">No shared topics found across sources.</div>`;
+  }
+
+  const bySrc = {};
+  unique.forEach(a => { if(!bySrc[a.source]) bySrc[a.source]=[]; bySrc[a.source].push(a); });
+  const srcOrder = ['CNN','Fox','Guardian'];
+  html += `<div class="section-title">📰 Unique Coverage by Source</div><div class="unique-list">`;
+  srcOrder.forEach(src => {
+    if (!bySrc[src]?.length) return;
+    html += `<div style="margin-bottom:16px"><div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:8px">${src}</div>`;
+    bySrc[src].slice(0,5).forEach(a => { html += articleHTML(a); });
+    html += `</div>`;
+  });
+  html += `</div>`;
+
+  html += `
+    <div class="dl-row">
+      <button class="dl-btn" onclick="downloadHTML()">⬇ Download Report (HTML)</button>
+      <button class="dl-btn" onclick="downloadText()">⬇ Download Report (TXT)</button>
+    </div>
+  `;
+
+  el.innerHTML = html;
+}
+
+function articleHTML(a) {
+  return `
+    <div class="article">
+      <div class="article-source ${a.source}">${a.source}</div>
+      <div class="article-title"><a href="${a.url}" target="_blank">${a.title}</a></div>
+      ${a.description ? `<div class="article-desc">${a.description.slice(0,120)}${a.description.length>120?'…':''}</div>` : ''}
+    </div>
+  `;
+}
+
+function capitalize(s) { return s.replace(/\b\w/g, c => c.toUpperCase()); }
+
+function buildTextReport() {
+  if (!lastReportData) return '';
+  const { clusters, unique, generated } = lastReportData;
+  let t = `NEWS AGENT REPORT\nGenerated: ${generated}\n${'='.repeat(60)}\n\n`;
+  t += `SHARED TOPICS\n${'-'.repeat(40)}\n`;
+  Object.entries(clusters).forEach(([key, arts]) => {
+    t += `\n▶ ${capitalize(key)}\n`;
+    arts.forEach(a => { t += `  [${a.source}] ${a.title}\n  ${a.url}\n`; });
+  });
+  t += `\nUNIQUE COVERAGE\n${'-'.repeat(40)}\n`;
+  const bySrc = {};
+  unique.forEach(a => { if(!bySrc[a.source]) bySrc[a.source]=[]; bySrc[a.source].push(a); });
+  Object.entries(bySrc).forEach(([src, arts]) => {
+    t += `\n${src}:\n`;
+    arts.slice(0,5).forEach(a => { t += `  • ${a.title}\n  ${a.url}\n`; });
+  });
+  return t;
+}
+
+function downloadText() {
+  const blob = new Blob([buildTextReport()], {type:'text/plain'});
+  triggerDownload(blob, 'news_report.txt');
+}
+
+function downloadHTML() {
+  const content = document.getElementById('report').innerHTML;
+  const full = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>News Report</title>
+  <style>body{font-family:Segoe UI,sans-serif;background:#0f1117;color:#e0e0e0;padding:30px}
+  .badge{display:inline-block;font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;margin:2px}
+  .badge.cnn{background:#cc0000;color:#fff}.badge.fox{background:#003366;color:#fff}.badge.guardian{background:#005689;color:#fff}
+  .cluster{background:#1a1d2e;border:1px solid #2d2f45;border-radius:10px;padding:18px;margin-bottom:14px}
+  .article{border-left:2px solid #3a3d55;padding:8px 12px;margin-bottom:8px}
+  .article-source{font-size:.7rem;font-weight:700;text-transform:uppercase}
+  .article-source.CNN{color:#ff6b6b}.article-source.Fox{color:#6b9fff}.article-source.Guardian{color:#6bffb8}
+  a{color:#6c7bff}</style></head><body>${content}</body></html>`;
+  const blob = new Blob([full], {type:'text/html'});
+  triggerDownload(blob, 'news_report.html');
+}
+
+function triggerDownload(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+</script>
+</body>
+</html>
