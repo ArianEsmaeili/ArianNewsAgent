@@ -93,7 +93,16 @@
         <div class="custom-hint">Type any keyword — the agent will search all 3 sources for it.</div>
       </div>
     </div>
-    <button class="run-btn" id="runBtn" onclick="runAgent()">▶ Run Agent</button>
+        <div>
+      <label>Date Range</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="date" id="dateFrom" style="width:150px;background:#0f1117;border:1px solid #3a3d55;border-radius:6px;padding:9px 13px;color:#e0e0e0;font-size:0.9rem" />
+        <span style="color:#888;font-size:0.85rem">to</span>
+        <input type="date" id="dateTo" style="width:150px;background:#0f1117;border:1px solid #3a3d55;border-radius:6px;padding:9px 13px;color:#e0e0e0;font-size:0.9rem" />
+      </div>
+      <div class="custom-hint">⚠️ Date filtering requires a paid NewsAPI plan. On free plan, latest news is always returned.</div>
+    </div>
+      <button class="run-btn" id="runBtn" onclick="runAgent()">▶ Run Agent</button>
   </div>
 </div>
 
@@ -131,8 +140,12 @@ function getQuery() {
 }
 
 async function fetchSource(sourceId, q) {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value;
   let url = `${PROXY}?sources=${sourceId}`;
   if (q) url += `&q=${encodeURIComponent(q)}`;
+  if (from) url += `&from=${from}`;
+  if (to) url += `&to=${to}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
@@ -221,6 +234,7 @@ function renderReport({ bySource, query, generated }) {
       <button class="dl-btn" onclick="downloadHTML()">⬇ Download Report (HTML)</button>
       <button class="dl-btn" onclick="downloadText()">⬇ Download Report (TXT)</button>
       <button class="dl-btn" onclick="downloadDOC()">⬇ Download Report (DOC)</button>
+      <button class="dl-btn" onclick="downloadPDF()">⬇ Download Report (PDF)</button>
     </div>
   `;
 
@@ -312,6 +326,51 @@ function downloadHTML() {
   triggerDownload(new Blob([full], {type:'text/html'}), 'news_report.html');
 }
 
+function downloadPDF() {
+  const { bySource, query, generated } = lastReportData;
+  const srcOrder = ['CNN', 'Fox', 'Guardian'];
+  const srcNames = { CNN: 'CNN', Fox: 'Fox News', Guardian: 'The Guardian' };
+  const srcColors = { CNN: '#cc0000', Fox: '#003366', Guardian: '#005689' };
+
+  const printWin = window.open('', '_blank');
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>News Report</title>
+  <style>
+    body { font-family: Calibri, Arial, sans-serif; max-width: 800px; margin: 40px auto; color: #111; line-height: 1.6; }
+    h1 { font-size: 1.6rem; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 6px; }
+    .meta { color: #888; font-size: 0.85rem; margin-bottom: 24px; }
+    .source-block { margin-bottom: 24px; page-break-inside: avoid; }
+    .source-name { font-weight: bold; font-size: 1.1rem; padding-bottom: 4px; margin-bottom: 10px; border-bottom: 2px solid currentColor; }
+    .article-item { margin-bottom: 10px; padding-left: 10px; border-left: 3px solid #ddd; }
+    .article-item a { color: #1a0dab; font-size: 0.95rem; }
+    .article-desc { color: #555; font-size: 0.85rem; margin-top: 2px; }
+    @media print { body { margin: 20px; } }
+  </style></head><body>
+  <h1>📰 Arian's News Agent — Report</h1>
+  <div class="meta">Topic: <strong>${query}</strong> &nbsp;|&nbsp; Generated: ${generated}</div>`;
+
+  srcOrder.forEach(src => {
+    const arts = bySource[src] || [];
+    html += `<div class="source-block">
+      <div class="source-name" style="color:${srcColors[src]}">${srcNames[src]} says:</div>`;
+    if (arts.length) {
+      arts.slice(0,5).forEach(a => {
+        html += `<div class="article-item">
+          <div><a href="${a.url}">${a.title}</a></div>
+          ${a.description ? `<div class="article-desc">${a.description.slice(0,150)}…</div>` : ''}
+        </div>`;
+      });
+    } else {
+      html += `<div style="color:#aaa">No articles found.</div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `</body></html>`;
+  printWin.document.write(html);
+  printWin.document.close();
+  printWin.onload = () => { printWin.print(); };
+}
+
 function downloadDOC() {
   const content = buildDocContent();
   const blob = new Blob(['\ufeff', content], { type: 'application/msword' });
@@ -330,6 +389,8 @@ function triggerDownload(blob, filename) {
   const today = new Date();
   const weekAgo = new Date(); weekAgo.setDate(today.getDate() - 7);
   const fmt = d => d.toISOString().split('T')[0];
+  document.getElementById('dateFrom').value = fmt(weekAgo);
+  document.getElementById('dateTo').value = fmt(today);
 })();
 </script>
 </body>
