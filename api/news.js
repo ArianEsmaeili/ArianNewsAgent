@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
-  const { sources, q, from, to } = req.query;
+  const { sources, q } = req.query;
   const apiKey = process.env.NEWS_API_KEY;
 
   if (!apiKey) {
@@ -15,6 +15,7 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(url);
     const data = await response.json();
+    // Send back raw so we can debug
     res.status(200).json(data);
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
