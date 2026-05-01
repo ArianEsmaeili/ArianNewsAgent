@@ -11,10 +11,12 @@
   header h1 { font-size: 1.3rem; font-weight: 700; color: #fff; }
   header span { font-size: 0.8rem; color: #888; margin-left: auto; }
   .config { background: #1a1d2e; border: 1px solid #2d2f45; border-radius: 10px; padding: 20px; margin: 24px 30px 0; }
-  .config h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 14px; }
-  .config-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+  .config h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 18px; }
+  .config-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
+  .config-section label { font-size: 0.8rem; color: #aaa; display: block; margin-bottom: 8px; }
   .config-row label { font-size: 0.8rem; color: #aaa; display: block; margin-bottom: 5px; }
   .config-row input[type=password], .config-row input[type=text] { background: #0f1117; border: 1px solid #3a3d55; border-radius: 6px; padding: 9px 13px; color: #e0e0e0; font-size: 0.9rem; width: 280px; }
+  .config-section input[type=password], .config-section input[type=text] { background: #0f1117; border: 1px solid #3a3d55; border-radius: 6px; padding: 9px 13px; color: #e0e0e0; font-size: 0.9rem; width: 100%; }
   .config-row input:focus { outline: none; border-color: #6c7bff; }
   .topic-mode { display: flex; gap: 8px; margin-bottom: 10px; }
   .mode-btn { background: #0f1117; border: 1px solid #3a3d55; color: #aaa; border-radius: 6px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; transition: all 0.2s; }
