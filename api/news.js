@@ -9,8 +9,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Try without date filters first
   let url = `https://newsapi.org/v2/top-headlines?sources=${sources}&apiKey=${apiKey}`;
+  if (q) url += `&q=${encodeURIComponent(q)}`;
 
   try {
     const response = await fetch(url);
